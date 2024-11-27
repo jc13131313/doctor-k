@@ -36,7 +36,7 @@ const PaymentModal = ({
 
   const fetchGCashInfo = async () => {
     try {
-      const adminDocRef = doc(db, "admin", "FBDukaeYvvWHDgGCtqQZvwEIHxj2"); // Replace 'adminID' with your actual admin document ID.
+      const adminDocRef = doc(db, "admin", "8upG6lKqn5VBoWvp6lFFRG0AAKH2"); // Replace 'adminID' with your actual admin document ID.
       const adminDoc = await getDoc(adminDocRef);
       if (adminDoc.exists()) {
         const data = adminDoc.data();
