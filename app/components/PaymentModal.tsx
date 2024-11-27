@@ -88,7 +88,7 @@ const PaymentModal = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold mb-4">Select Payment Method</h3>
         <p className="text-gray-600 mb-4">
-          Total Amount: ${orderTotal.toFixed(2)}
+          Total Amount: P{orderTotal.toFixed(2)}
         </p>
 
         <div className="space-y-3">
