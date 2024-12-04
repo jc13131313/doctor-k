@@ -66,7 +66,7 @@ const PaymentModal = ({
       await updateDoc(orderRef, {
         paymentMethod: selectedMethod.toLowerCase(),
         paymentStatus: "paid",
-        status: "completed",
+        status: "paid",
         ...(selectedMethod === "GCash" && {
           paymentProof: paymentProof.trim(),
         }),
@@ -122,7 +122,7 @@ const PaymentModal = ({
                 height={192}
               />
               <p className="text-sm text-gray-700 mt-2">
-                Scan this QR code to pay using GCash.
+                Scan this QR code or scan the QR code on the table to pay using GCash.
               </p>
             </div>
             <p className="text-sm text-gray-700">
