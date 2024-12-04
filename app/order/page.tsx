@@ -17,7 +17,7 @@ import Cart from "@/app/components/Cart";
 import OrderHistory from "@/app/components/OrderHistory";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { FaShoppingCart } from 'react-icons/fa';
+import { FaTimes, FaShoppingCart } from 'react-icons/fa';
 
 export interface Category {
   id: string;
@@ -50,10 +50,11 @@ export interface Order {
   tableNumber: number;
   items: CartItem[];
   total: number;
-  status: "pending" | "completed" | "cancelled";
+  status: "pending" | "accepted" | "paid" | "ready" | "served" | "cancelled";
   createdAt: number;
   paymentMethod?: "cash" | "gcash";
-  paymentStatus: "pending" | "paid";
+  paymentStatus: "pending" | "paid" | "processing";
+  orderNumber: string;
 }
 
 export interface SelectedOption {
@@ -166,6 +167,7 @@ function MenuContent() {
   const [tableNumber, setTableNumber] = useState<string>("");
   const [showTableModal, setShowTableModal] = useState(true);
   const [isCartVisible, setIsCartVisible] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadInitialData() {
@@ -236,6 +238,9 @@ function MenuContent() {
             JSON.stringify(selectedOptions)
       );
 
+      setNotification(`${item.name} has been added to your cart!`);
+      setTimeout(() => setNotification(null), 2000);
+
       if (existingItem) {
         return currentCart.map((cartItem) =>
           cartItem.id === item.id &&
@@ -301,6 +306,19 @@ function MenuContent() {
       alert("Failed to update table number. Please try again.");
     }
   };
+  const handleRemoveItem = (itemId: string, selectedOptions: SelectedOption[]) => {
+    setCart((prevCart) =>
+      prevCart.filter(
+        (item) =>
+          item.id !== itemId ||
+          JSON.stringify(item.selectedOptions) !== JSON.stringify(selectedOptions)
+      )
+    );
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+  };
 
   const handleOrderNow = async () => {
     if (cart.length === 0 || isSubmitting || !tableNumber) return;
@@ -317,6 +335,7 @@ function MenuContent() {
         createdAt: Date.now(),
         paymentMethod: "cash",
         paymentStatus: "pending",
+        orderNumber: String(Math.floor(10000 + Math.random() * 90000)).slice(1),
       };
 
       const orderId = await saveOrder(newOrder);
@@ -353,6 +372,8 @@ function MenuContent() {
     0
   );
 
+  const cartTotalQuantity = cart.reduce((total, item) => total + item.quantity, 0);
+
   // Add this handler
   const handleTableNumberClick = () => {
     setShowTableModal(true);
@@ -368,12 +389,22 @@ function MenuContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {notification && (
+        <div className="fixed bottom-4 left-4 bg-green-500 text-white p-3 rounded-md shadow-lg">
+          {notification}
+        </div>
+      )}
       <button
         onClick={handleCartToggle}
         className="fixed top-4 right-4 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors"
         aria-label="View Cart"
       >
         <FaShoppingCart className="h-5 w-5" />
+        {cartTotalQuantity > 0 && (
+          <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full px-1">
+            {cartTotalQuantity}
+          </span>
+        )}
       </button>
       {isCartVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -381,15 +412,18 @@ function MenuContent() {
             <Cart
               cart={cart}
               onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem} // Add this
+              onClearCart={handleClearCart} 
               onOrderNow={handleOrderNow}
               isSubmitting={isSubmitting}
             />
-            <button
-              onClick={() => setIsCartVisible(false)}
-              className="mt-4 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors focus:outline-none"
-            >
-              Close
-            </button>
+          <button
+            onClick={() => setIsCartVisible(false)}
+            className="absolute top-4 right-4 text-2xl text-gray-600 hover:text-gray-900 focus:outline-none"
+            aria-label="Close cart"
+          >
+            <FaTimes className="text-lg" />
+          </button>
           </div>
         </div>
       )}
