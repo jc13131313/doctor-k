@@ -1,7 +1,6 @@
 "use client";
 
 import { CartItem, SelectedOption } from "@/app/order/page";
-import { FaTrash } from "react-icons/fa";
 
 interface CartProps {
   cart: CartItem[];
@@ -10,8 +9,6 @@ interface CartProps {
     newQuantity: number,
     selectedOptions: SelectedOption[]
   ) => void;
-  onRemoveItem: (itemId: string, selectedOptions: SelectedOption[]) => void;
-  onClearCart: () => void;
   onOrderNow: () => void;
   isSubmitting: boolean;
 }
@@ -19,8 +16,6 @@ interface CartProps {
 const Cart = ({
   cart,
   onUpdateQuantity,
-  onRemoveItem,
-  onClearCart,
   onOrderNow,
   isSubmitting,
 }: CartProps) => {
@@ -106,15 +101,6 @@ const Cart = ({
                       <p className="font-semibold text-orange-600">
                         ₱{itemTotal.toFixed(2)}
                       </p>
-                      <button
-                        onClick={() =>
-                          onRemoveItem(item.id, item.selectedOptions)
-                        }
-                        className="p-2 rounded-full text-red-600 hover:bg-gray-100"
-                        aria-label="Remove item"
-                      >
-                        <FaTrash className="text-lg" />
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -132,23 +118,19 @@ const Cart = ({
             <button
               onClick={onOrderNow}
               disabled={isSubmitting || cart.length === 0}
-              className={`w-full py-3 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 font-semibold ${
-                isSubmitting || cart.length === 0
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}
+              className={`
+                w-full py-3 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 font-semibold
+                ${
+                  isSubmitting || cart.length === 0
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                }
+              `}
               aria-label="Place your order"
             >
               {isSubmitting ? "Placing Order..." : "Order Now"}
             </button>
           </div>
-          <button
-            onClick={onClearCart}
-            disabled={cart.length === 0}
-            className="mt-2 w-full py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
-          >
-             Clear Cart
-          </button>
         </div>
       ) : (
         <p className="text-gray-500 text-center py-8">Your cart is empty</p>
