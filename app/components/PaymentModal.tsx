@@ -66,7 +66,7 @@ const PaymentModal = ({
       await updateDoc(orderRef, {
         paymentMethod: selectedMethod.toLowerCase(),
         paymentStatus: "paid",
-        status: "paid",
+        status: "completed",
         ...(selectedMethod === "GCash" && {
           paymentProof: paymentProof.trim(),
         }),
@@ -88,7 +88,7 @@ const PaymentModal = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold mb-4">Select Payment Method</h3>
         <p className="text-gray-600 mb-4">
-          Total Amount: P{orderTotal.toFixed(2)}
+          Total Amount: ${orderTotal.toFixed(2)}
         </p>
 
         <div className="space-y-3">
@@ -122,7 +122,7 @@ const PaymentModal = ({
                 height={192}
               />
               <p className="text-sm text-gray-700 mt-2">
-                Scan this QR code or scan the QR code on the table to pay using GCash.
+                Scan this QR code to pay using GCash.
               </p>
             </div>
             <p className="text-sm text-gray-700">
