@@ -36,7 +36,7 @@ const PaymentModal = ({
 
   const fetchGCashInfo = async () => {
     try {
-      const adminDocRef = doc(db, "admin", "FBDukaeYvvWHDgGCtqQZvwEIHxj2"); // Replace 'adminID' with your actual admin document ID.
+      const adminDocRef = doc(db, "admin", "8upG6lKqn5VBoWvp6lFFRG0AAKH2"); // Replace 'adminID' with your actual admin document ID.
       const adminDoc = await getDoc(adminDocRef);
       if (adminDoc.exists()) {
         const data = adminDoc.data();
@@ -88,7 +88,7 @@ const PaymentModal = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold mb-4">Select Payment Method</h3>
         <p className="text-gray-600 mb-4">
-          Total Amount: ${orderTotal.toFixed(2)}
+          Total Amount: P{orderTotal.toFixed(2)}
         </p>
 
         <div className="space-y-3">
