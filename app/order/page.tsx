@@ -17,7 +17,7 @@ import Cart from "@/app/components/Cart";
 import OrderHistory from "@/app/components/OrderHistory";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { FaTimes, FaShoppingCart } from 'react-icons/fa';
+import { FaShoppingCart } from 'react-icons/fa';
 
 export interface Category {
   id: string;
@@ -50,10 +50,10 @@ export interface Order {
   tableNumber: number;
   items: CartItem[];
   total: number;
-  status: "pending" | "accepted" | "paid" | "ready" | "served" | "cancelled";
+  status: "pending" | "completed" | "cancelled";
   createdAt: number;
   paymentMethod?: "cash" | "gcash";
-  paymentStatus: "pending" | "paid" | "processing";
+  paymentStatus: "pending" | "paid";
   orderNumber: string;
 }
 
@@ -306,19 +306,6 @@ function MenuContent() {
       alert("Failed to update table number. Please try again.");
     }
   };
-  const handleRemoveItem = (itemId: string, selectedOptions: SelectedOption[]) => {
-    setCart((prevCart) =>
-      prevCart.filter(
-        (item) =>
-          item.id !== itemId ||
-          JSON.stringify(item.selectedOptions) !== JSON.stringify(selectedOptions)
-      )
-    );
-  };
-
-  const handleClearCart = () => {
-    setCart([]);
-  };
 
   const handleOrderNow = async () => {
     if (cart.length === 0 || isSubmitting || !tableNumber) return;
@@ -412,18 +399,15 @@ function MenuContent() {
             <Cart
               cart={cart}
               onUpdateQuantity={handleUpdateQuantity}
-              onRemoveItem={handleRemoveItem} // Add this
-              onClearCart={handleClearCart} 
               onOrderNow={handleOrderNow}
               isSubmitting={isSubmitting}
             />
-          <button
-            onClick={() => setIsCartVisible(false)}
-            className="absolute top-4 right-4 text-2xl text-gray-600 hover:text-gray-900 focus:outline-none"
-            aria-label="Close cart"
-          >
-            <FaTimes className="text-lg" />
-          </button>
+            <button
+              onClick={() => setIsCartVisible(false)}
+              className="mt-4 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors focus:outline-none"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
