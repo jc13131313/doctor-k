@@ -322,10 +322,23 @@ function MenuContent() {
 
   const handleOrderNow = async () => {
     if (cart.length === 0 || isSubmitting || !tableNumber) return;
-
+  
     try {
       setIsSubmitting(true);
-
+  
+      // Fetch the current highest order number from the database
+      const ordersRef = collection(db, "orders");
+      const highestOrderQuery = query(ordersRef, orderBy("orderNumber", "desc"));
+      const querySnapshot = await getDocs(highestOrderQuery);
+  
+      let newOrderNumber = 1; // Default value if no orders are found
+      if (!querySnapshot.empty) {
+        // Get the highest order number
+        const highestOrder = querySnapshot.docs[0].data() as Order;
+        newOrderNumber = parseInt(highestOrder.orderNumber, 10) + 1;
+      }
+  
+      // Create the new order
       const newOrder: Omit<Order, "id"> = {
         deviceId: getDeviceId(),
         tableNumber: parseInt(tableNumber),
@@ -335,11 +348,12 @@ function MenuContent() {
         createdAt: Date.now(),
         paymentMethod: "cash",
         paymentStatus: "pending",
-        orderNumber: String(Math.floor(10000 + Math.random() * 90000)).slice(1),
+        orderNumber: String(newOrderNumber), // Use the incremented order number
       };
-
+  
+      // Save the order to Firestore
       const orderId = await saveOrder(newOrder);
-
+  
       // Update the state only if the order does not already exist
       setOrders((prevOrders) => {
         const orderExists = prevOrders.some((order) => order.id === orderId);
@@ -354,7 +368,7 @@ function MenuContent() {
           ...prevOrders,
         ];
       });
-
+  
       setCart([]); // Clear the cart after order is placed
     } catch (error) {
       console.error("Error placing order:", error);
@@ -362,6 +376,7 @@ function MenuContent() {
       setIsSubmitting(false);
     }
   };
+  
 
   const filteredMenuItems = selectedCategory
     ? menuItems.filter((item) => item.category === selectedCategory)
