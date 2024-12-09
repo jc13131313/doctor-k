@@ -2,6 +2,8 @@ import * as htmlToImage from "html-to-image";
 import { Order } from "@/app/order/page";
 import { useState, useEffect, useRef } from "react";
 import PaymentModal from "./PaymentModal";
+import { db } from "@/lib/firebase.config";
+import { doc, updateDoc } from "firebase/firestore";
 
 interface OrderHistoryProps {
   orders: Order[];
@@ -13,14 +15,14 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [notifiedOrders, setNotifiedOrders] = useState<string[]>([]);
-  const [showBlockedNotificationModal, setShowBlockedNotificationModal] =
-    useState(false);
+  const [showBlockedNotificationModal, setShowBlockedNotificationModal] = useState(false);
   const [showOrderStatusModal, setShowOrderStatusModal] = useState(false);
   const [orderStatusMessage, setOrderStatusMessage] = useState<string>('');
   const [orderStatusTitle, setOrderStatusTitle] = useState<string>('');
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [showCancelConfirmationModal, setShowCancelConfirmationModal] = useState(false);
 
-  // Function to get the status color based on the order's status
   function getStatusColor(status: Order["status"]): string {
     switch (status) {
       case "accepted":
@@ -38,7 +40,6 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
     }
   }
 
-  // Handle modal notification for relevant order statuses
   useEffect(() => {
     orders.forEach((order) => {
       if (
@@ -54,7 +55,6 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
     });
   }, [orders, notifiedOrders]);
 
-  // Function to show modal for order status updates
   const showOrderStatusModalDialog = (order: Order) => {
     let title = '';
     let body = '';
@@ -62,7 +62,7 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
     switch (order.status) {
       case "accepted":
         title = "Order Accepted!";
-        body = `Your order #${order.orderNumber} has been accepted.`;
+        body = `Your order #${order.orderNumber} has been accepted.<br>Total: ₱${order.total.toFixed(2)}`;
         break;
       case "ready":
         title = "Order Ready to Serve!";
@@ -122,6 +122,37 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
     }
   };
 
+  const handleCancelClick = (order: Order) => {
+    setOrderToCancel(order);
+    setShowCancelConfirmationModal(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (orderToCancel) {
+      try {
+        const orderRef = doc(db, "orders", orderToCancel.id);
+        await updateDoc(orderRef, {
+          status: "cancelled"
+        });
+
+        // Update local state
+        const updatedOrders = orders.map(order => 
+          order.id === orderToCancel.id ? { ...order, status: "cancelled" } : order
+        );
+        // You might need to implement a function to update the orders in the parent component
+        // For now, we'll just update the local state
+        // updateOrders(updatedOrders);
+
+        showOrderStatusModalDialog({ ...orderToCancel, status: "cancelled" });
+        setShowCancelConfirmationModal(false);
+        setOrderToCancel(null);
+      } catch (error) {
+        console.error("Error cancelling order:", error);
+        // You might want to show an error message to the user here
+      }
+    }
+  };
+
   return (
     <div className="mt-12 border-t pt-8">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Order History</h2>
@@ -130,7 +161,7 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
         </div>
-      ) : orders.length > 0 ? (
+      ) : orders && orders.length > 0 ? (
         <div className="space-y-4">
           {orders.map((order, index) => (
             <div
@@ -147,6 +178,7 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
                   <p className="font-medium text-orange-600">
                     Total: ₱{order.total.toFixed(2)}
                   </p>
+                  <p className="text-sm text-gray-600">Order #: {order.orderNumber}</p>
                   <p className="text-sm text-gray-600">Table #{order.tableNumber}</p>
                 </div>
                 <span
@@ -173,6 +205,15 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
                   </div>
                 ))}
               </div>
+
+              {order.status === "pending" && (
+                <button
+                  onClick={() => handleCancelClick(order)}
+                  className="w-full mt-3 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                >
+                  Cancel Order
+                </button>
+              )}
 
               {order.status === "accepted" &&
                 (!order.paymentStatus || order.paymentStatus === "pending") ? (
@@ -279,7 +320,7 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h3 className="text-xl font-semibold text-center">{orderStatusTitle}</h3>
-            <p className="mt-2 text-center">{orderStatusMessage}</p>
+            <p className="mt-2 text-center" dangerouslySetInnerHTML={{ __html: orderStatusMessage }} />
             <div className="flex justify-center mt-4">
               <button
                 onClick={() => setShowOrderStatusModal(false)}
@@ -291,8 +332,32 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
           </div>
         </div>
       )}
+
+      {showCancelConfirmationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-xl font-semibold text-center">Confirm Cancellation</h3>
+            <p className="mt-2 text-center">Are you sure you want to cancel this order?</p>
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={handleConfirmCancel}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              >
+                Yes, Cancel Order
+              </button>
+              <button
+                onClick={() => setShowCancelConfirmationModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                No, Keep Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default OrderHistory;
+
