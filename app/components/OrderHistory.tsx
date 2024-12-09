@@ -136,9 +136,6 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
         });
 
         // Update local state
-        const updatedOrders = orders.map(order => 
-          order.id === orderToCancel.id ? { ...order, status: "cancelled" } : order
-        );
         // You might need to implement a function to update the orders in the parent component
         // For now, we'll just update the local state
         // updateOrders(updatedOrders);
