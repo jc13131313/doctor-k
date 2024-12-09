@@ -3,7 +3,7 @@ import { Order } from "@/app/order/page";
 import { useState, useEffect, useRef } from "react";
 import PaymentModal from "./PaymentModal";
 import { db } from "@/lib/firebase.config";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection } from "firebase/firestore";
 
 interface OrderHistoryProps {
   orders: Order[];
@@ -128,14 +128,17 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
   };
 
   const handleConfirmCancel = async () => {
-    if (orderToCancel) {
+    if (orderToCancel && orderToCancel.id) {
       try {
-        const orderRef = doc(db, "orders", orderToCancel.id);
+        const orderRef = doc(collection(db, "orders"), orderToCancel.id);
         await updateDoc(orderRef, {
           status: "cancelled"
         });
 
         // Update local state
+        const updatedOrders = orders.map(order => 
+          order.id === orderToCancel.id ? { ...order, status: "cancelled" } : order
+        );
         // You might need to implement a function to update the orders in the parent component
         // For now, we'll just update the local state
         // updateOrders(updatedOrders);
