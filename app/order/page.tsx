@@ -335,7 +335,7 @@ function MenuContent() {
       if (!querySnapshot.empty) {
         // Get the highest order number
         const highestOrder = querySnapshot.docs[0].data() as Order;
-        newOrderNumber = parseInt(highestOrder.orderNumber, 10000) + 1;
+        newOrderNumber = parseInt(highestOrder.orderNumber, 10) + 1;
       }
   
       // Create the new order
