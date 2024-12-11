@@ -22,6 +22,9 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [showCancelConfirmationModal, setShowCancelConfirmationModal] = useState(false);
+  const [orderToServe, setOrderToServe] = useState<Order | null>(null);
+  const [showServeConfirmationModal, setShowServeConfirmationModal] = useState(false);
+
 
   function getStatusColor(status: Order["status"]): string {
     switch (status) {
@@ -68,10 +71,7 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
         title = "Order Ready to Serve!";
         body = `Your order #${order.orderNumber} is ready to serve.`;
         break;
-      case "cancelled":
-        title = "Order Cancelled!";
-        body = `Your order #${order.orderNumber} has been cancelled.`;
-        break;
+
       default:
         return; // Don't show modal for other statuses
     }
@@ -135,17 +135,32 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
           status: "cancelled"
         });
 
-        // Update local state
-        // You might need to implement a function to update the orders in the parent component
-        // For now, we'll just update the local state
-        // updateOrders(updatedOrders);
-
         showOrderStatusModalDialog({ ...orderToCancel, status: "cancelled" });
         setShowCancelConfirmationModal(false);
         setOrderToCancel(null);
       } catch (error) {
         console.error("Error cancelling order:", error);
-        // You might want to show an error message to the user here
+      }
+    }
+  };
+
+  const handleServeClick = (order: Order) => {
+    setOrderToServe(order);
+    setShowServeConfirmationModal(true);
+  };
+
+  const handleConfirmServe = async () => {
+    if (orderToServe && orderToServe.id) {
+      try {
+        const orderRef = doc(collection(db, "orders"), orderToServe.id);
+        await updateDoc(orderRef, {
+          status: "served"
+        });
+
+        setShowServeConfirmationModal(false);
+        setOrderToServe(null);
+      } catch (error) {
+        console.error("Error marking order as served:", error);
       }
     }
   };
@@ -220,18 +235,29 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
                   >
                     Process Payment
                   </button>
-                ) : order.paymentStatus === "paid" ? (
-                  <button
-                    onClick={() => handleReceiptClick(order)}
-                    className="w-full mt-3 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  >
-                    View Receipt
-                  </button>
                 ) : order.paymentStatus === "processing" && (
                   <div className="w-full mt-3 px-4 py-2 bg-green-100 text-green-800 rounded-md text-center">
                     Proceed to the counter - Thank You!
                   </div>
                 )}
+
+              {(order.status === "paid" || order.status === "served") && (
+                <button
+                  onClick={() => handleReceiptClick(order)}
+                  className="w-full mt-3 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                >
+                  View Receipt
+                </button>
+              )}
+
+              {order.status === "ready" && (
+                <button
+                  onClick={() => handleServeClick(order)}
+                  className="w-full mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Mark as Served
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -240,6 +266,7 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
           No order history
         </p>
       )}
+
 
       {showReceipt && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -352,6 +379,31 @@ const OrderHistory = ({ orders, isLoadingOrders }: OrderHistoryProps) => {
           </div>
         </div>
       )}
+
+      {showServeConfirmationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <p className="text-center text-gray-800">
+              Are you sure you want to mark this order as served?
+            </p>
+            <div className="flex justify-around mt-4">
+              <button
+                onClick={handleConfirmServe}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Yes, Mark as Served
+              </button>
+              <button
+                onClick={() => setShowServeConfirmationModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+              >
+                No, Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
