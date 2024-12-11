@@ -11,6 +11,7 @@ import {
   orderBy,
   onSnapshot,
   updateDoc,
+  limit,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import Cart from "@/app/components/Cart";
@@ -322,22 +323,30 @@ function MenuContent() {
 
   const handleOrderNow = async () => {
     if (cart.length === 0 || isSubmitting || !tableNumber) return;
-  
+
     try {
       setIsSubmitting(true);
-  
-      // Fetch the current highest order number from the database
+
+      // Fetch all orders and find the highest order number
       const ordersRef = collection(db, "orders");
-      const highestOrderQuery = query(ordersRef, orderBy("orderNumber", "desc"));
-      const querySnapshot = await getDocs(highestOrderQuery);
-  
-      let newOrderNumber = 1; // Default value if no orders are found
-      if (!querySnapshot.empty) {
-        // Get the highest order number
-        const highestOrder = querySnapshot.docs[0].data() as Order;
-        newOrderNumber = parseInt(highestOrder.orderNumber, 10) + 1;
-      }
-  
+      const allOrdersQuery = query(ordersRef, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(allOrdersQuery);
+
+      let highestOrderNumber = 0;
+      querySnapshot.forEach((doc) => {
+        const orderData = doc.data() as Order;
+        const orderNumber = parseInt(orderData.orderNumber, 10);
+        if (orderNumber > highestOrderNumber) {
+          highestOrderNumber = orderNumber;
+        }
+      });
+
+      // Increment the highest order number
+      const newOrderNumber = highestOrderNumber + 1;
+
+      // Ensure the order number is always a two-digit string
+      const formattedOrderNumber = newOrderNumber.toString().padStart(2, '0');
+
       // Create the new order
       const newOrder: Omit<Order, "id"> = {
         deviceId: getDeviceId(),
@@ -348,12 +357,12 @@ function MenuContent() {
         createdAt: Date.now(),
         paymentMethod: "cash",
         paymentStatus: "pending",
-        orderNumber: String(newOrderNumber), // Use the incremented order number
+        orderNumber: formattedOrderNumber,
       };
-  
+
       // Save the order to Firestore
       const orderId = await saveOrder(newOrder);
-  
+
       // Update the state only if the order does not already exist
       setOrders((prevOrders) => {
         const orderExists = prevOrders.some((order) => order.id === orderId);
@@ -368,7 +377,7 @@ function MenuContent() {
           ...prevOrders,
         ];
       });
-  
+
       setCart([]); // Clear the cart after order is placed
     } catch (error) {
       console.error("Error placing order:", error);
@@ -658,3 +667,4 @@ const MenuPage = () => {
 };
 
 export default MenuPage;
+
