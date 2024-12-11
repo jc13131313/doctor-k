@@ -11,7 +11,6 @@ import {
   orderBy,
   onSnapshot,
   updateDoc,
-  limit,
 } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import Cart from "@/app/components/Cart";
